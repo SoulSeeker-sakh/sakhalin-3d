@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<!--
+  Синематик 3D — Нефтегазовые проекты Сахалина и Дальнего Востока
+  Автор: Александр Чмулев (ПТК СахГУ)
+  © 2026 Александр Чмулев. Все права защищены (All Rights Reserved).
+-->
+<html lang="ru" style="background-color:#031326;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="author" content="Александр Чмулев (ПТК СахГУ)">
+    <meta name="copyright" content="© 2026 Александр Чмулев. All Rights Reserved.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#031326">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>3D-Синематик • Нефтегазовые проекты Сахалина и Дальнего Востока</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js (r128) & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onerror="window.__threeLoadErr='Не удалось загрузить three.min.js'"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" onerror="window.__controlsLoadErr='Не удалось загрузить OrbitControls.js'"></script>
+    <!-- Google Font Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="src/styles/main.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%230c4a6e'/%3E%3Cstop offset='100%25' stop-color='%23031326'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)' stroke='%23fbbf24' stroke-width='3'/%3E%3Cpath d='M33 9 L36 17 L35 28 L41 37 L38 40 L34 36 L34 45 L38 53 L35 55 L32 49 L29 55 L26 52 L29 44 L29 29 L26 20 L30 13 Z' fill='%2334d399' stroke='%23fde68a' stroke-width='1.8' stroke-linejoin='round'/%3E%3Ccircle cx='39' cy='21' r='3.5' fill='%23fbbf24'/%3E%3C/svg%3E">
+    <style>
+        #hud-layout,
+        #sidebar-panel,
+        #detail-card,
+        #mobile-backdrop,
+        .hud-root,
+        #ui-overlay,
+        #markers-layer,
+        #map-scale-bar,
+        #controls-hint-toast,
+        #cinema-exit-btn,
+        #btn-exit-cinema,
+        #toast-box,
+        #error-banner,
+        #three-brothers-card,
+        #project-info-modal,
+        #settings-modal,
+        #link-fallback-modal,
+        #globe-intro-overlay .globe-ui-chrome,
+        #globe-sakhalin-pin {
+            display: none !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            visibility: hidden !important;
+        }
+        #cin-overlay-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 90;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body style="background-color:#031326;">
+
+
+    <!-- 3D Scene Visual Filter Atmospheric Overlay (canvas only, behind HUD) -->
+    <div id="scene-fx-overlay" aria-hidden="true"></div>
+
+
+    <!-- Info Card for Three Brothers Rocks (Скалы «Три Брата») -->
+    <div id="three-brothers-card" role="dialog" aria-label="Скалы Три Брата">
+        <div class="flex items-start justify-between gap-2 mb-2.5">
+            <div>
+                <div id="tb-sub" class="text-[10px] font-bold uppercase tracking-wider text-sky-300">Памятник природы Сахалина</div>
+                <h3 id="tb-title" class="text-base font-extrabold text-white leading-tight">Скалы «Три Брата»</h3>
+            </div>
+            <button id="btn-close-three-brothers" type="button" class="w-7 h-7 rounded-lg bg-slate-800/85 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition shrink-0" aria-label="Закрыть">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <p id="tb-desc" class="text-xs text-slate-300 leading-relaxed mb-3">
+            Знаменитая группа из трёх столбообразных базальтовых скал-кекуров в водах Татарского пролива у западного побережья Сахалина, рядом с Александровском-Сахалинским. Один из главных природных символов острова, упомянутый А. П. Чеховым в книге «Остров Сахалин».
+        </p>
+        <div class="flex items-center justify-between text-[11px] text-slate-400 mb-3.5 px-2.5 py-1.5 rounded-xl bg-slate-950/75 border border-slate-800">
+            <span id="tb-coord-label">Координаты</span>
+            <span id="tb-coord-val" class="font-semibold text-sky-300">50°53′ с. ш. 142°07′ в. д.</span>
+        </div>
+        <a id="tb-wiki-btn" href="https://ru.wikipedia.org/wiki/%D0%A2%D1%80%D0%B8_%D0%91%D1%80%D0%B0%D1%82%D0%B0_(%D0%BE%D1%81%D1%82%D1%80%D0%BE%D0%B2%D0%B0,_%D0%A1%D0%B0%D1%85%D0%B0%D0%BB%D0%B8%D0%BD)" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-sky-400 to-cyan-400 hover:from-sky-300 hover:to-cyan-300 text-slate-950 font-extrabold text-xs transition flex items-center justify-center gap-1.5 shadow-lg shadow-sky-500/20">
+            <span id="tb-wiki-text">Читать в Википедии</span>
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+            </svg>
+        </a>
+    </div>
+
+    <!-- Project Overview Summary Modal («О проекте» — расширенная сводка) -->
+    <div id="project-info-modal" class="hidden fixed inset-0 z-[58] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70" role="dialog" aria-modal="true" aria-label="О проекте">
+        <div class="glass-panel project-themed-panel w-full max-w-lg max-h-[86dvh] rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+            <div class="px-5 py-4 border-b border-slate-700/70 flex items-start justify-between gap-3 shrink-0 bg-slate-900/60">
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap mb-1.5">
+                        <span id="proj-info-sub" class="text-[10px] font-extrabold uppercase tracking-widest proj-badge-accent inline-block px-2 py-0.5 rounded-md">Сахалин-2</span>
+                        <span id="proj-info-status" class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-400/30">Действующий</span>
+                    </div>
+                    <h3 id="proj-info-title" class="text-base sm:text-lg font-extrabold text-white leading-snug">Проект «Сахалин-2»</h3>
+                    <p id="proj-info-subtitle" class="text-[11px] text-slate-400 mt-0.5"></p>
+                </div>
+                <button id="btn-close-proj-info" type="button" class="w-8 h-8 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition shrink-0" aria-label="Закрыть">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-5 space-y-4 overscroll-contain">
+                <div id="proj-info-desc" class="text-xs sm:text-[13px] text-slate-200 leading-relaxed space-y-2.5"></div>
+                <div id="proj-info-metrics" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+                <div class="bg-slate-950/65 border border-slate-800/90 rounded-xl p-3.5 space-y-2">
+                    <div id="proj-info-facts-title" class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Ключевые особенности проекта</div>
+                    <ul id="proj-info-facts" class="space-y-1.5 text-xs text-slate-200 leading-relaxed"></ul>
+                </div>
+                <a id="proj-info-site-btn" href="https://www.sakhalinenergy.ru/ru/company/assets/" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 px-4 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-slate-600/60 text-white font-bold text-xs transition flex items-center justify-center gap-2">
+                    <span id="proj-info-site-text">Открыть официальный сайт оператора</span>
+                    <svg class="w-3.5 h-3.5 text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+                <div class="pt-2 border-t border-slate-800/90 space-y-1 text-[10px] text-slate-400 leading-relaxed">
+                    <div id="proj-info-sources"></div>
+                    <div id="proj-info-scale-note" class="text-slate-500"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Settings Modal («Настройки карты») -->
+    <div id="settings-modal" class="hidden fixed inset-0 z-[59] flex items-center justify-center p-3 sm:p-4 bg-slate-950/70" role="dialog" aria-modal="true" aria-label="Настройки карты">
+        <div class="glass-panel project-themed-panel w-full max-w-md max-h-[86dvh] rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+            <div class="px-5 py-3.5 border-b border-slate-700/70 flex items-center justify-between gap-3 shrink-0 bg-slate-900/60">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="w-8 h-8 rounded-xl proj-badge-accent flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 id="settings-title" class="text-sm sm:text-base font-extrabold text-white leading-tight">Настройки карты</h3>
+                        <div id="settings-subtitle" class="text-[10px] text-slate-400">Атмосфера, вид, камера и графика</div>
+                    </div>
+                </div>
+                <button id="btn-close-settings" type="button" class="w-8 h-8 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition shrink-0" aria-label="Закрыть">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 overscroll-contain">
+                <!-- 1. Погода и время суток -->
+                <div class="space-y-2">
+                    <div id="set-sec-weather" class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Погода и время суток</div>
+                    <div class="grid grid-cols-3 gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+                        <button id="set-weather-0" type="button" class="py-2 px-1.5 rounded-lg text-[11px] font-bold transition flex flex-col items-center gap-1 text-slate-300 hover:text-white">
+                            <svg class="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                            <span id="set-weather-0-lbl">Лето • День</span>
+                        </button>
+                        <button id="set-weather-1" type="button" class="py-2 px-1.5 rounded-lg text-[11px] font-bold transition flex flex-col items-center gap-1 text-slate-300 hover:text-white">
+                            <svg class="w-4 h-4 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v20M4.93 4.93l14.14 14.14M2 12h20M4.93 19.07L19.07 4.93"/></svg>
+                            <span id="set-weather-1-lbl">Снег • День</span>
+                        </button>
+                        <button id="set-weather-2" type="button" class="py-2 px-1.5 rounded-lg text-[11px] font-bold transition flex flex-col items-center gap-1 text-slate-300 hover:text-white">
+                            <svg class="w-4 h-4 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                            <span id="set-weather-2-lbl">Снег • Ночь</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Отображение и эффекты -->
+                <div class="space-y-2">
+                    <div id="set-sec-display" class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Отображение и эффекты</div>
+                    <div class="bg-slate-950/75 border border-slate-800 rounded-xl divide-y divide-slate-800/80">
+                        <button id="set-toggle-labels" type="button" class="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 text-left hover:bg-slate-800/40 transition">
+                            <span class="flex items-center gap-2.5 min-w-0">
+                                <svg class="w-4 h-4 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                <span id="set-lbl-labels" class="text-xs font-semibold text-slate-200 truncate">Метки и подписи объектов</span>
+                            </span>
+                            <span id="set-badge-labels" class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shrink-0">ВКЛ</span>
+                        </button>
+                        <button id="set-toggle-sound" type="button" class="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 text-left hover:bg-slate-800/40 transition">
+                            <span class="flex items-center gap-2.5 min-w-0">
+                                <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+                                <span id="set-lbl-sound" class="text-xs font-semibold text-slate-200 truncate">Звук океана и ветра</span>
+                            </span>
+                            <span id="set-badge-sound" class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shrink-0">ВКЛ</span>
+                        </button>
+                        <button id="set-toggle-flow" type="button" class="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 text-left hover:bg-slate-800/40 transition">
+                            <span class="flex items-center gap-2.5 min-w-0">
+                                <svg class="w-4 h-4 text-cyan-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                <span id="set-lbl-flow" class="text-xs font-semibold text-slate-200 truncate">Анимация потока по трубам</span>
+                            </span>
+                            <span id="set-badge-flow" class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shrink-0">ВКЛ</span>
+                        </button>
+                        <button id="set-toggle-subsea" type="button" class="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 text-left hover:bg-slate-800/40 transition">
+                            <span class="flex items-center gap-2.5 min-w-0">
+                                <svg class="w-4 h-4 text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
+                                <span id="set-lbl-subsea" class="text-xs font-semibold text-slate-200 truncate">Подводный режим (X-Ray дна)</span>
+                            </span>
+                            <span id="set-badge-subsea" class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700 shrink-0">ВЫКЛ</span>
+                        </button>
+                        <button id="set-toggle-bg-projects" type="button" class="w-full px-3.5 py-2.5 flex items-center justify-between gap-2 text-left hover:bg-slate-800/40 transition">
+                            <span class="flex items-center gap-2.5 min-w-0">
+                                <svg class="w-4 h-4 text-violet-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                                <span id="set-lbl-bg-projects" class="text-xs font-semibold text-slate-200 truncate">Соседние проекты на фоне</span>
+                            </span>
+                            <span id="set-badge-bg-projects" class="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 shrink-0">ВКЛ</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. Камера и режимы -->
+                <div class="space-y-2">
+                    <div id="set-sec-camera" class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Камера и быстрые режимы</div>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button id="set-btn-top" type="button" class="px-3 py-2 rounded-xl bg-slate-900/85 hover:bg-slate-800 border border-slate-700/70 text-xs font-semibold text-slate-200 flex items-center gap-2 transition">
+                            <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+                            <span id="set-lbl-top" class="truncate">Вид сверху</span>
+                        </button>
+                        <button id="set-btn-reset" type="button" class="px-3 py-2 rounded-xl bg-slate-900/85 hover:bg-slate-800 border border-slate-700/70 text-xs font-semibold text-slate-200 flex items-center gap-2 transition">
+                            <svg class="w-3.5 h-3.5 text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                            <span id="set-lbl-reset" class="truncate">Сбросить обзор</span>
+                        </button>
+                        <button id="set-btn-tour" type="button" class="px-3 py-2 rounded-xl bg-slate-900/85 hover:bg-slate-800 border border-slate-700/70 text-xs font-semibold text-amber-300 flex items-center gap-2 transition">
+                            <svg class="w-3.5 h-3.5 text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            <span id="set-lbl-tour" class="truncate">Автотур</span>
+                        </button>
+                        <button id="set-btn-cinema" type="button" class="px-3 py-2 rounded-xl bg-slate-900/85 hover:bg-slate-800 border border-slate-700/70 text-xs font-semibold text-slate-200 flex items-center gap-2 transition">
+                            <svg class="w-3.5 h-3.5 text-slate-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <span id="set-lbl-cinema" class="truncate">Кино-режим</span>
+                        </button>
+                        <button id="set-btn-globe" type="button" class="px-3 py-2 rounded-xl bg-slate-900/85 hover:bg-slate-800 border border-slate-700/70 text-xs font-semibold text-amber-200 flex items-center gap-2 transition">
+                            <svg class="w-3.5 h-3.5 text-amber-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <span id="set-lbl-globe" class="truncate">3D-планета</span>
+                        </button>
+                        <button id="set-btn-screenshot" type="button" class="px-3 py-2 rounded-xl bg-slate-900/85 hover:bg-slate-800 border border-slate-700/70 text-xs font-semibold text-slate-200 flex items-center gap-2 transition">
+                            <svg class="w-3.5 h-3.5 text-sky-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            <span id="set-lbl-screenshot" class="truncate">Снимок PNG</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4. Язык и качество графики -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="space-y-1.5">
+                        <div id="set-sec-lang" class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Язык интерфейса</div>
+                        <div class="grid grid-cols-2 gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+                            <button id="set-lang-ru" type="button" class="py-1.5 px-2 rounded-lg text-[11px] font-bold transition text-slate-300 hover:text-white">Русский</button>
+                            <button id="set-lang-en" type="button" class="py-1.5 px-2 rounded-lg text-[11px] font-bold transition text-slate-300 hover:text-white">English</button>
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <div id="set-sec-gfx" class="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Качество 3D</div>
+                        <div class="grid grid-cols-3 gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+                            <button id="set-gfx-low" type="button" class="py-1.5 px-1 rounded-lg text-[10px] font-bold transition text-slate-300 hover:text-white">Эконом</button>
+                            <button id="set-gfx-auto" type="button" class="py-1.5 px-1 rounded-lg text-[10px] font-bold transition text-slate-300 hover:text-white">Авто</button>
+                            <button id="set-gfx-high" type="button" class="py-1.5 px-1 rounded-lg text-[10px] font-bold transition text-slate-300 hover:text-white">Выс.</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Broken / Unreachable Link Fallback Banner -->
+    <div id="link-fallback-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/70" role="alertdialog" aria-modal="true" aria-label="Проверка ссылки">
+        <div class="glass-panel w-full max-w-sm rounded-2xl p-5 border-amber-400/50 space-y-3.5 shadow-2xl">
+            <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                    </span>
+                    <h3 id="link-fb-title" class="text-sm font-extrabold text-white leading-tight">Ссылка временно недоступна</h3>
+                </div>
+                <button id="btn-close-link-fb" type="button" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition shrink-0" aria-label="Закрыть">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <p id="link-fb-desc" class="text-xs text-slate-300 leading-relaxed">
+                Ресурс не отвечает или заблокировал подключение. Сайты российских компаний (gazprom.ru, rosneft.ru) часто не открываются при включённом VPN или без сертификата Минцифры — попробуйте отключить VPN либо откройте статью в Википедии.
+            </p>
+            <div id="link-fb-url" class="text-[10px] font-mono text-slate-400 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1.5 truncate"></div>
+            <div class="space-y-2 pt-1">
+                <a id="link-fb-wiki" href="https://ru.wikipedia.org/wiki/%D0%A1%D0%B0%D1%85%D0%B0%D0%BB%D0%B8%D0%BD-2" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 font-extrabold text-xs text-center transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/20">
+                    <span id="link-fb-wiki-text">Открыть в Википедии</span>
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+                <div class="grid grid-cols-2 gap-2">
+                    <a id="link-fb-search" href="#" target="_blank" rel="noopener noreferrer" class="py-2.5 px-3 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 font-bold text-xs text-center border border-sky-400/40 transition">
+                        Найти в поиске
+                    </a>
+                    <a id="link-fb-open" href="#" target="_blank" rel="noopener noreferrer" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs text-center border border-slate-700 transition">
+                        Открыть всё равно
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cinema Mode Exit Button -->
+    <button id="cinema-exit-btn" type="button" title="Вернуть интерфейс (H / Esc)">
+        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+        </svg>
+        <span id="cinema-exit-label">Вернуть интерфейс</span>
+    </button>
+
+    <!-- Dynamic Geographic Scale Bar (km) -->
+    <div id="map-scale-bar" aria-hidden="true">
+        <div id="map-scale-label">50 км</div>
+        <div id="map-scale-line"></div>
+    </div>
+
+    <!-- First-Entry Controls Hint Toast -->
+    <div id="controls-hint-toast" role="status" aria-live="polite"></div>
+
+
+    <!-- Interactive High-Detail 3D Planet Cinematic Intro -->
+    <div id="globe-intro-overlay" aria-label="Интерактивная 3D-планета — вход в проект">
+        <div id="globe-canvas-wrap"></div>
+        <div id="globe-warp-veil"></div>
+
+        <!-- Плавающая точка входа на о. Сахалин -->
+        <div id="globe-sakhalin-pin" class="globe-ui-chrome" style="display:none;">
+            <button id="btn-globe-enter-pin" type="button" class="globe-pin-btn">
+                <span class="globe-pin-dot"></span>
+                <span class="flex flex-col text-left leading-tight">
+                    <span id="globe-pin-title" class="text-[11px] sm:text-xs font-extrabold tracking-tight text-white">о. Сахалин</span>
+                    <span id="globe-pin-sub" class="text-[9px] sm:text-[10px] font-semibold text-amber-300">Нажмите, чтобы открыть</span>
+                </span>
+            </button>
+        </div>
+
+        <!-- Верхняя шапка интро (полностью помещается на узких телефонах) -->
+        <div class="globe-ui-chrome pointer-events-none fixed inset-x-0 top-0 z-[66] hud-safe-padding flex items-center justify-between gap-2">
+            <div class="glass-panel pointer-events-auto rounded-2xl px-2.5 py-2 sm:px-5 sm:py-3 flex items-center gap-2 sm:gap-3 min-w-0 flex-1 sm:flex-initial sm:max-w-md border-slate-600/45">
+                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-amber-300 via-yellow-500 to-amber-600 p-0.5 shadow-md shrink-0">
+                    <div class="w-full h-full rounded-full bg-slate-900 flex items-center justify-center">
+                        <svg viewBox="0 0 64 64" class="w-5 h-5 sm:w-6 sm:h-6">
+                            <circle cx="32" cy="32" r="28" fill="#0c4a6e" stroke="#fbbf24" stroke-width="2.5"/>
+                            <path d="M12,18 Q28,10 34,26 T24,52 Q10,44 12,18 Z" fill="#facc15"/>
+                            <path d="M40,12 L43,22 L41,34 L45,46 L41,52 L38,44 L39,30 L37,18 Z" fill="#facc15"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="min-w-0">
+                    <div id="globe-title-sub" class="text-[9px] sm:text-[11px] font-bold uppercase tracking-wider text-amber-400 truncate">Интерактивный 3D-атлас</div>
+                    <div id="globe-title-main" class="text-[11px] sm:text-base font-extrabold text-white leading-tight truncate">Проекты Сахалина и ДВ</div>
+                </div>
+            </div>
+
+            <div class="pointer-events-auto flex items-center gap-1.5 shrink-0">
+                <button id="btn-globe-lang" type="button" class="glass-panel h-9 sm:h-10 px-2.5 rounded-xl flex items-center justify-center text-[11px] font-extrabold text-sky-300 hover:text-white hover:border-sky-400/70 active:scale-95 transition" title="Русский / English" aria-label="Сменить язык">
+                    <span id="lang-label-globe">RU</span>
+                </button>
+                <button id="btn-globe-sound" type="button" class="glass-panel w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center text-slate-300 hover:text-white hover:border-sky-400/70 active:scale-95 transition" title="Включить / выключить звук (космос и эффекты)" aria-label="Звук">
+                    <svg id="globe-sound-off" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/>
+                    </svg>
+                    <svg id="globe-sound-on" class="w-4 h-4 hidden text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                    </svg>
+                </button>
+            <button id="btn-globe-focus-sakhalin" type="button" class="glass-panel pointer-events-auto px-2.5 py-2 sm:px-3.5 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-bold text-amber-300 hover:text-white hover:border-amber-400/70 active:scale-95 transition flex items-center gap-1.5 shrink-0" title="Повернуть планету к Сахалину">
+                <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
+                <span id="globe-find-mob" class="sm:hidden">Сахалин</span>
+                <span id="globe-find-desk" class="hidden sm:inline">Найти Сахалин</span>
+            </button>
+            </div>
+        </div>
+
+        <!-- Нижняя панель: подсказка вращения + настройки платформы (Телефон / ПК) + быстрый вход -->
+        <div class="globe-ui-chrome pointer-events-none fixed inset-x-0 bottom-0 z-[66] hud-safe-padding flex flex-col items-center gap-2">
+            <div class="glass-panel rounded-full px-3 py-1 text-[10px] sm:text-xs text-slate-200 flex items-center gap-1.5 border-slate-600/40">
+                <svg class="w-3.5 h-3.5 text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                <span id="globe-rotate-hint">Крутите планету • Нажмите на точку у Сахалина</span>
+            </div>
+
+            <div class="pointer-events-auto glass-panel w-full max-w-md rounded-2xl p-2.5 sm:p-4 border-slate-600/50 space-y-2.5">
+                <!-- Выбор платформы -->
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between text-[10px] sm:text-[11px]">
+                        <span id="globe-platform-label" class="font-bold uppercase tracking-wider text-slate-300">Платформа (интерфейс)</span>
+                        <span id="globe-platform-detected" class="text-sky-300 font-semibold">Авто</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1.5 bg-slate-950/85 p-1 rounded-xl border border-slate-700/70">
+                        <button type="button" data-platform="auto" class="globe-mode-btn active-mode py-1.5 sm:py-2 px-2 rounded-lg text-[11px] font-bold transition flex items-center justify-center gap-1.5">
+                            <span>Авто</span>
+                        </button>
+                        <button type="button" data-platform="mobile" class="globe-mode-btn py-1.5 sm:py-2 px-2 rounded-lg text-[11px] font-bold text-slate-300 hover:text-white transition flex items-center justify-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                            </svg>
+                            <span>Телефон</span>
+                        </button>
+                        <button type="button" data-platform="desktop" class="globe-mode-btn py-1.5 sm:py-2 px-2 rounded-lg text-[11px] font-bold text-slate-300 hover:text-white transition flex items-center justify-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                            <span>ПК</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Выбор стартовой вкладки и кнопка входа -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <div class="grid grid-cols-4 gap-1 shrink-0">
+                        <button type="button" data-start-proj="sakhalin2" class="globe-proj-btn active-s2 px-2 py-2 rounded-xl border border-slate-700 text-[11px] font-bold transition">
+                            Сах-2
+                        </button>
+                        <button type="button" data-start-proj="sakhalin1" class="globe-proj-btn px-2 py-2 rounded-xl border border-slate-700 bg-slate-900/80 text-slate-300 text-[11px] font-bold transition">
+                            Сах-1
+                        </button>
+                        <button type="button" data-start-proj="sakhalin3" class="globe-proj-btn px-2 py-2 rounded-xl border border-slate-700 bg-slate-900/80 text-slate-300 text-[11px] font-bold transition">
+                            Сах-3
+                        </button>
+                        <button type="button" data-start-proj="shv" class="globe-proj-btn px-2 py-2 rounded-xl border border-slate-700 bg-slate-900/80 text-slate-300 text-[11px] font-bold transition" title="Магистральный газопровод Сахалин — Хабаровск — Владивосток">
+                            СХВ
+                        </button>
+                    </div>
+                    <button id="btn-globe-enter-main" type="button" class="flex-1 py-2 sm:py-2.5 px-3.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg shadow-amber-500/25 active:scale-[0.98] transition flex items-center justify-center gap-1.5">
+                        <span>Открыть карту</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3D WebGL Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Floating Markers Layer (Cities + Facilities) -->
+    <div id="markers-layer" class="fixed inset-0 pointer-events-none z-10 overflow-hidden"></div>
+
+    <!-- Diagnostic Error Banner (Visible only if WebGL or JS initialization fails) -->
+    <div id="error-banner" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-50 max-w-md w-[92%] glass-panel border-rose-500/80 bg-rose-950/95 text-rose-100 rounded-2xl p-4 text-xs shadow-2xl">
+        <div class="font-bold text-rose-300 mb-1">Ошибка инициализации 3D-карты</div>
+        <div id="error-banner-msg" class="text-rose-100/90 break-words font-mono text-[11px]"></div>
+    </div>
+
+    <!-- 3-Tier Adaptive HUD Overlay -->
+    <div id="hud-layout" class="fixed inset-0 z-20 pointer-events-none flex flex-col justify-between hud-safe-padding gap-2.5 sm:gap-3">
+
+        <!-- Mobile Backdrop Overlay (над картой и шапкой, но строго под шторками) -->
+        <div id="mobile-backdrop" class="fixed inset-0 z-30 bg-slate-950/60 backdrop-blur-[2px] opacity-0 pointer-events-none transition-opacity duration-300 md:hidden"></div>
+
+        <!-- TOP TIER: Symmetrical 3-Zone Header -->
+        <header class="w-full flex flex-col gap-2 shrink-0">
+            <div class="w-full flex items-center justify-between gap-2 sm:gap-3 relative">
+                <!-- Left Pill: Brand Title Card (exact width match with left sidebar!) -->
+                <div id="btn-brand-title-card" role="button" tabindex="0" title="О проекте" class="glass-panel rounded-2xl px-2.5 py-2 md:px-3 md:py-0 md:h-[52px] md:w-[312px] lg:w-[336px] flex items-center gap-2.5 pointer-events-auto cursor-pointer hover:border-emerald-400/70 transition min-w-0 flex-1 md:flex-initial shrink-0">
+                    <div id="brand-logo-box" class="w-9 h-9 rounded-xl flex items-center justify-center relative overflow-hidden shrink-0 transition-all duration-300" style="background: linear-gradient(135deg, rgba(16,185,129,0.22), rgba(15,23,42,0.92)); border: 1px solid rgba(52,211,153,0.55); box-shadow: 0 0 18px rgba(16,185,129,0.28);">
+                        <svg viewBox="0 0 48 48" class="w-6 h-6" fill="none">
+                            <circle cx="24" cy="24" r="19" stroke="currentColor" stroke-opacity="0.28" stroke-width="1.4" id="brand-logo-ring" style="color: #34d399;"/>
+                            <path id="brand-logo-island" d="M25.5 7.5 C27.2 9.6 26.8 12.2 25.8 14.5 C24.6 17.5 25.2 21.0 26.6 24.2 C27.8 27.0 30.8 29.0 31.4 30.4 C30.0 31.2 28.0 29.8 26.2 28.6 C24.8 31.0 25.4 35.4 27.4 39.2 C25.8 39.8 24.4 38.4 23.6 36.8 C22.5 38.6 21.0 40.0 19.4 39.4 C20.4 36.2 21.4 32.0 21.2 27.5 C21.0 22.8 20.6 17.8 21.8 13.0 C22.6 10.2 23.8 8.2 25.5 7.5 Z" fill="#34d399"/>
+                            <path id="brand-logo-wave" d="M10 29 C14.5 25.5 18.5 25.5 23 28.2 C27.5 30.8 32.5 30.2 38 25.5" stroke="#a7f3d0" stroke-width="2.1" stroke-linecap="round"/>
+                            <circle id="brand-logo-dot" cx="34.5" cy="15.5" r="2.6" fill="#6ee7b7"/>
+                        </svg>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5">
+                            <span id="header-brand-sub" class="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-emerald-400 truncate transition-colors duration-300">Сахалинская Энергия</span>
+                            <span id="brand-badge-3d" class="hidden sm:inline-block px-1.5 py-0.5 text-[9px] font-bold rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-400/35 shrink-0 transition-colors duration-300 leading-none">3D</span>
+                        </div>
+                        <h1 id="header-brand-title" class="text-xs sm:text-[13px] lg:text-[14px] font-extrabold text-white tracking-tight leading-tight truncate">
+                            о. Сахалин — Проект «Сахалин-2»
+                        </h1>
+                    </div>
+                </div>
+
+                <!-- Center Pill: Project Switcher Tabs (dead-center on wide desktop, equal height 52px) -->
+                <div id="desktop-project-tabs" class="hidden md:flex items-center gap-1 glass-panel p-1.5 rounded-2xl md:h-[52px] pointer-events-auto shrink-0 border-slate-600/50 xl:absolute xl:left-1/2 xl:-translate-x-1/2" role="tablist" aria-label="Выбор проекта">
+                    <button data-project="sakhalin1" class="project-tab-btn h-full px-3 rounded-xl text-xs font-extrabold text-slate-300 hover:text-white flex items-center gap-1.5 whitespace-nowrap" role="tab" aria-selected="false">
+                        <span class="w-2 h-2 rounded-full bg-orange-400"></span>
+                        <span>Сахалин-1</span>
+                    </button>
+                    <button data-project="sakhalin2" class="project-tab-btn active-s2 h-full px-3 rounded-xl text-xs font-extrabold flex items-center gap-1.5 whitespace-nowrap" role="tab" aria-selected="true">
+                        <span class="w-2 h-2 rounded-full bg-emerald-300 border border-white/60"></span>
+                        <span>Сахалин-2</span>
+                    </button>
+                    <button data-project="sakhalin3" class="project-tab-btn h-full px-3 rounded-xl text-xs font-extrabold text-slate-300 hover:text-white flex items-center gap-1.5 whitespace-nowrap" role="tab" aria-selected="false" title="Проект «Сахалин-3» (Киринское и Южно-Киринское ПДК, БТК)">
+                        <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                        <span>Сахалин-3</span>
+                    </button>
+                    <button data-project="shv" class="project-tab-btn h-full px-3 rounded-xl text-xs font-extrabold text-slate-300 hover:text-white flex items-center gap-1.5 whitespace-nowrap" role="tab" aria-selected="false" title="Магистральный газопровод Сахалин — Хабаровск — Владивосток (СХВ)">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                        <span>СХВ</span>
+                    </button>
+                </div>
+
+                <!-- Mobile Quick Top-Right Controls (Lang, Weather & Labels) -->
+                <div class="flex md:hidden items-center gap-1.5 pointer-events-auto shrink-0">
+                    <button id="btn-mobile-lang" type="button" class="glass-panel w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-extrabold text-sky-300 active:scale-95 transition" title="Русский / English" aria-label="Сменить язык">
+                        <span id="lang-label-mobile">RU</span>
+                    </button>
+                    <button id="btn-mobile-weather" class="glass-panel w-9 h-9 rounded-xl flex items-center justify-center text-amber-300 active:scale-95 transition" title="Погода: Лето / Снег днём / Снег ночью" aria-label="Переключить погоду">
+                        <svg id="mobile-weather-icon-summer" class="w-4 h-4 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <svg id="mobile-weather-icon-snow-day" class="w-4 h-4 hidden text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v20M4.93 4.93l14.14 14.14M2 12h20M4.93 19.07L19.07 4.93"/>
+                        </svg>
+                        <svg id="mobile-weather-icon-snow-night" class="w-4 h-4 hidden text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                        </svg>
+                    </button>
+                    <button id="btn-mobile-settings" type="button" class="glass-panel w-9 h-9 rounded-xl flex items-center justify-center text-slate-200 hover:text-white active:scale-95 transition" title="Настройки карты" aria-label="Открыть настройки">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Right Pill: Clean Desktop Controls (52px glass bar + Settings tab) -->
+                <div class="hidden md:flex items-center gap-0.5 glass-panel p-1.5 rounded-2xl md:h-[52px] pointer-events-auto shrink-0 border-slate-600/50">
+                    <button id="btn-toggle-tour" class="h-full px-2.5 rounded-xl text-xs font-semibold text-amber-300 hover:text-white hover:bg-amber-500/15 transition flex items-center gap-1.5 whitespace-nowrap" title="Автоматическая экскурсия по цепочке проекта">
+                        <svg id="desktop-tour-icon-play" class="w-3.5 h-3.5 text-amber-400 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        <svg id="desktop-tour-icon-stop" class="w-3.5 h-3.5 hidden text-rose-400 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                            <rect x="6" y="6" width="12" height="12" rx="2"/>
+                        </svg>
+                        <span id="desktop-tour-text">Автотур</span>
+                    </button>
+
+                    <span class="w-px h-5 bg-slate-700/70 mx-0.5"></span>
+
+                    <button id="btn-reset-camera" class="h-full px-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-700/60 transition flex items-center gap-1.5 whitespace-nowrap" title="Вернуть камеру к общему виду">
+                        <svg class="w-3.5 h-3.5 text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
+                        <span id="desktop-reset-text">Обзор</span>
+                    </button>
+
+                    <span class="w-px h-5 bg-slate-700/70 mx-0.5"></span>
+
+                    <button id="btn-open-settings" type="button" class="h-full px-2.5 rounded-xl text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-700/60 transition flex items-center gap-1.5 whitespace-nowrap" title="Погода, метки, звук, кино-режим, глобус, графика">
+                        <svg class="w-3.5 h-3.5 text-slate-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span id="desktop-settings-text">Настройки</span>
+                    </button>
+
+                    <span class="w-px h-5 bg-slate-700/70 mx-0.5"></span>
+
+                    <button id="btn-toggle-lang" type="button" class="h-full px-2.5 rounded-xl text-xs font-extrabold text-sky-300 hover:text-white hover:bg-slate-700/60 transition flex items-center gap-1 whitespace-nowrap" title="Переключить язык: Русский / English">
+                        <span id="lang-label-desktop">RU</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Project Switcher Pill (Compact 4-tab bar) -->
+            <div class="flex md:hidden w-full justify-center pointer-events-none">
+                <div class="pointer-events-auto glass-panel p-1 rounded-xl grid grid-cols-4 gap-1 w-full max-w-md border-slate-600/50" role="tablist" aria-label="Выбор проекта">
+                    <button data-project="sakhalin1" class="project-tab-btn py-1.5 px-1 rounded-lg text-[10px] font-extrabold text-slate-300 flex items-center justify-center gap-1" role="tab" aria-selected="false">
+                        <span>Сах-1</span>
+                    </button>
+                    <button data-project="sakhalin2" class="project-tab-btn active-s2 py-1.5 px-1 rounded-lg text-[10px] font-extrabold flex items-center justify-center gap-1" role="tab" aria-selected="true">
+                        <span>Сах-2</span>
+                    </button>
+                    <button data-project="sakhalin3" class="project-tab-btn py-1.5 px-1 rounded-lg text-[10px] font-extrabold text-slate-300 flex items-center justify-center gap-1" role="tab" aria-selected="false">
+                        <span>Сах-3</span>
+                    </button>
+                    <button data-project="shv" class="project-tab-btn py-1.5 px-1 rounded-lg text-[10px] font-extrabold text-slate-300 flex items-center justify-center gap-1" role="tab" aria-selected="false">
+                        <span>СХВ</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MIDDLE TIER: Sidebar & Detail Card -->
+        <div class="flex-1 min-h-0 w-full flex items-stretch justify-between gap-4 relative">
+
+            <!-- Interactive North Compass & Quick Tools Pill (Aligned symmetrically right beside Sidebar) -->
+            <div class="pointer-events-none absolute top-0 left-0 right-0 md:left-[324px] lg:left-[348px] z-20 flex items-start justify-between gap-2">
+                <!-- Unified Symmetrical Vertical Tool Pill -->
+                <div class="flex items-start gap-2 pointer-events-none">
+                    <div class="glass-panel p-1.5 rounded-2xl flex flex-col items-center gap-1 pointer-events-auto shadow-xl border-slate-600/50">
+                        <!-- Interactive Compass -->
+                        <button id="compass-btn" class="w-9 h-9 rounded-xl flex items-center justify-center relative hover:bg-slate-700/60 active:scale-95 transition shrink-0" title="Ориентировать карту на Север" aria-label="Ориентировать карту на Север">
+                            <span class="absolute top-0 text-[7px] font-extrabold text-amber-400 leading-none select-none">С</span>
+                            <svg id="compass-needle" viewBox="0 0 36 36" class="w-6 h-6">
+                                <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(148,163,184,0.28)" stroke-width="1"/>
+                                <polygon points="18,5 21.5,18 14.5,18" fill="#f43f5e"/>
+                                <polygon points="18,31 21.5,18 14.5,18" fill="#cbd5e1" opacity="0.75"/>
+                                <circle cx="18" cy="18" r="2.2" fill="#f8fafc"/>
+                            </svg>
+                        </button>
+
+                        <span class="w-5 h-px bg-slate-700/70"></span>
+
+                        <!-- Project Overview Card («О проекте») -->
+                        <button id="btn-project-info" type="button" class="w-9 h-9 rounded-xl flex items-center justify-center text-sky-300 hover:text-white hover:bg-slate-700/60 active:scale-95 transition" title="Сводка о текущем проекте" aria-label="О проекте">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </button>
+
+                        <!-- HD Map Screenshot (PNG) -->
+                        <button id="btn-take-screenshot" type="button" class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700/60 active:scale-95 transition" title="Сделать снимок 3D-карты (PNG)" aria-label="Снимок карты">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Floating Auto-Tour Control Pill -->
+                <div id="tour-banner" class="hidden pointer-events-auto glass-panel rounded-2xl px-3 py-2 border-amber-400/50 shadow-2xl flex items-center gap-2.5 max-w-[calc(100%-56px)] sm:max-w-sm">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0"></span>
+                            <span id="tour-step-label" class="text-[11px] font-extrabold text-white truncate">Автотур 1/10 • ПА-Б</span>
+                        </div>
+                        <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden mt-1.5">
+                            <div id="tour-progress-bar" class="h-full bg-gradient-to-r from-amber-400 to-emerald-400 transition-[width] duration-150" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button id="btn-tour-prev" class="p-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 transition" title="Предыдущий этап">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <button id="btn-tour-next" class="p-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-200 transition" title="Следующий этап">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                        <button id="btn-tour-stop" class="p-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 border border-rose-400/40 transition" title="Остановить автотур">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Facilities Directory: Desktop Sidebar (exact width match with Brand Card!) / Mobile Pullable Full-Screen Sheet -->
+            <aside id="sidebar-panel" class="mobile-sheet sheet-sidebar project-themed-panel pointer-events-auto hidden md:flex flex-col w-full md:w-[312px] lg:w-[336px] max-h-full glass-panel rounded-2xl overflow-hidden z-[45]">
+                <!-- Mobile Drag Handle + Full-Screen Expand Toggle -->
+                <div id="sidebar-drag-area" class="md:hidden w-full pt-2.5 pb-1.5 px-4 flex items-center justify-between cursor-grab active:cursor-grabbing bg-slate-900/95 shrink-0">
+                    <span id="mobile-sidebar-hint" class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Потяните вверх</span>
+                    <span class="sheet-drag-handle"></span>
+                    <button id="btn-toggle-sidebar-size" type="button" class="text-[11px] font-bold px-2.5 py-0.5 rounded-lg proj-badge-accent active:scale-95 transition">
+                        На весь экран
+                    </button>
+                </div>
+
+                <div class="px-3.5 pt-2 pb-3 md:p-3.5 border-b border-slate-700/60 flex flex-col gap-2.5 shrink-0">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span id="sidebar-title-text" class="text-xs font-bold uppercase tracking-wider text-slate-200">Инфраструктура на карте</span>
+                            <span id="facilities-count-badge" class="px-1.5 py-0.5 rounded-md proj-badge-accent text-[10px] font-bold">13</span>
+                        </div>
+                        <button id="btn-close-sidebar" class="md:hidden p-1.5 rounded-xl bg-slate-800/90 text-slate-300 hover:text-white active:scale-95 transition" aria-label="Закрыть список">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Quick Search -->
+                    <div class="relative">
+                        <svg class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input id="facility-search" type="search" placeholder="Поиск платформы, завода, судна..." autocomplete="off"
+                               class="w-full bg-slate-950/85 border border-slate-700/70 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-400 transition">
+                    </div>
+
+                    <!-- Filter Tabs (Single-line crisp symmetric grid, themed to active project) -->
+                    <div class="grid grid-cols-4 gap-1 bg-slate-950/90 p-1 rounded-xl border border-slate-700/60">
+                        <button id="filter-tab-all" data-filter="all" class="filter-tab filter-active text-[10px] font-bold py-1.5 px-1 rounded-lg shadow transition whitespace-nowrap">
+                            Все (13)
+                        </button>
+                        <button id="filter-tab-offshore" data-filter="offshore" class="filter-tab text-[10px] font-bold py-1.5 px-1 rounded-lg text-slate-300 hover:text-white transition whitespace-nowrap">
+                            Шельф (3)
+                        </button>
+                        <button id="filter-tab-onshore" data-filter="onshore" class="filter-tab text-[10px] font-bold py-1.5 px-1 rounded-lg text-slate-300 hover:text-white transition whitespace-nowrap">
+                            Берег (6)
+                        </button>
+                        <button id="filter-tab-maritime" data-filter="maritime" class="filter-tab text-[10px] font-bold py-1.5 px-1 rounded-lg text-slate-300 hover:text-white transition whitespace-nowrap">
+                            Флот (4)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Facilities List -->
+                <div id="facilities-list" class="flex-1 overflow-y-auto p-3 space-y-2 overscroll-contain"></div>
+
+                <!-- Legend Footer -->
+                <div class="p-3 bg-slate-950/85 border-t border-slate-800/90 text-[11px] text-slate-300 space-y-1.5 shrink-0">
+                    <div id="sidebar-legend-title" class="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Условные обозначения карты:</div>
+                    <div id="sidebar-legend-grid" class="grid grid-cols-2 gap-1.5 pt-0.5">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-sky-500 border border-white inline-block shrink-0"></span>
+                            <span class="truncate">Морские платформы</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-orange-500 border border-white inline-block shrink-0"></span>
+                            <span class="truncate">Заводы / Комплексы</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 border border-white inline-block shrink-0"></span>
+                            <span class="truncate">Маяк Анива и флот</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-4 h-1.5 rounded-full bg-emerald-500 inline-block shrink-0"></span>
+                            <span class="truncate">Газ и нефть S2 (800 км)</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Facility Detail Card: Desktop Right Panel / Mobile Pullable Full-Screen Sheet -->
+            <div id="detail-card" class="mobile-sheet sheet-detail project-themed-panel pointer-events-auto hidden flex-col w-full md:w-96 max-h-full glass-panel rounded-2xl overflow-hidden shadow-2xl self-end md:self-start ml-auto z-[42]">
+                <!-- Mobile Drag Handle + Full-Screen/Collapse Toggle -->
+                <div id="detail-drag-area" class="md:hidden w-full pt-2.5 pb-1.5 px-4 flex items-center justify-between cursor-grab active:cursor-grabbing bg-slate-900/95 shrink-0">
+                    <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider" id="mobile-sheet-hint">Потяните вверх</span>
+                    <span class="sheet-drag-handle"></span>
+                    <button id="btn-toggle-detail-size" type="button" class="text-[11px] font-bold px-2.5 py-0.5 rounded-lg proj-badge-accent active:scale-95 transition">
+                        На весь экран
+                    </button>
+                </div>
+
+                <!-- Card Header with Prev/Next Object Switcher -->
+                <div class="px-4 py-3 sm:p-5 bg-gradient-to-r from-slate-900/95 to-slate-800/90 border-b border-slate-700/70 flex items-start justify-between gap-2.5 shrink-0">
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span id="card-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-500/20 text-sky-300 border border-sky-400/30">
+                                Морская платформа
+                            </span>
+                            <span id="card-code" class="text-xs font-extrabold text-amber-400">ПА-Б</span>
+                        </div>
+                        <h2 id="card-title" class="text-sm sm:text-lg font-extrabold text-white leading-snug">
+                            Платформа «Пильтун-Астохская-Б»
+                        </h2>
+                    </div>
+
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button id="btn-prev-facility" class="p-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white active:scale-95 transition" title="Предыдущий объект" aria-label="Предыдущий объект">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </button>
+                        <button id="btn-next-facility" class="p-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white active:scale-95 transition" title="Следующий объект" aria-label="Следующий объект">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </button>
+                        <button id="btn-close-card" class="p-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white active:scale-95 transition" title="Закрыть карточку" aria-label="Закрыть карточку">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sub-tabs Bar (Visible for combined facilities like БКП Чайво + БУ Ястреб) -->
+                <div id="card-subtabs-wrap" class="hidden px-4 py-2 bg-slate-950/85 border-b border-slate-700/60 shrink-0">
+                    <div id="card-subtabs" class="grid grid-cols-2 gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-700/70"></div>
+                </div>
+
+                <!-- Scrollable Card Body -->
+                <div class="detail-body-scroll p-4 sm:p-5 space-y-3.5 sm:space-y-4 overflow-y-auto overscroll-contain flex-1">
+                    <!-- Live Operational Status (Visible only for moving ships) -->
+                    <div id="card-ship-status" class="hidden rounded-xl bg-slate-950/80 border border-slate-700/80 px-3 py-2.5 space-y-2">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span id="ship-status-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                                <span id="ship-status-text" class="text-xs font-bold text-white truncate">В рейсе • 14 узл.</span>
+                            </div>
+                            <span id="ship-status-phase" class="text-[10px] font-semibold uppercase tracking-wider text-amber-300 shrink-0">Рейс</span>
+                        </div>
+                        <div id="ship-progress-wrap" class="hidden w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                            <div id="ship-progress-bar" class="h-full rounded-full bg-gradient-to-r from-amber-400 to-emerald-400 transition-[width] duration-150" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <p id="card-desc" class="text-xs sm:text-sm text-slate-200 leading-relaxed"></p>
+
+                    <div id="card-specs" class="grid grid-cols-2 gap-2"></div>
+
+                    <div class="flex items-center gap-2 text-xs text-slate-300 bg-slate-950/65 px-3 py-2.5 rounded-xl border border-slate-800">
+                        <svg class="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span id="card-location"></span>
+                    </div>
+
+                    <div class="pt-1 flex flex-col gap-1.5">
+                        <a id="card-website-btn" href="#" target="_blank" rel="noopener noreferrer"
+                           class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 transition active:scale-[0.99]">
+                            <span>Перейти на сайт объекта</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                            </svg>
+                        </a>
+
+                        <div class="flex items-center justify-center">
+                            <span id="card-domain-hint" class="text-[11px] text-slate-400 truncate max-w-full">sakhalinenergy.ru</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- BOTTOM TIER: Desktop Legend & Mobile Touch Dock -->
+        <footer class="w-full flex flex-col items-center md:items-end shrink-0">
+            <!-- Desktop Controls Hint -->
+            <div class="hidden md:flex glass-panel rounded-full px-4 py-1.5 text-[11px] text-slate-200 items-center gap-3 pointer-events-auto">
+                <span class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                    <span id="desktop-hint-main">Нажмите на платформу, маяк или танкер</span>
+                </span>
+                <span class="text-slate-600">|</span>
+                <span id="desktop-hint-keys" class="text-slate-300">ЛКМ: вращение • Колесо: масштаб • ПКМ: сдвиг</span>
+            </div>
+
+            <!-- Mobile Bottom Navigation Dock (Thumb-Friendly, 4 clean buttons) -->
+            <nav id="mobile-dock" class="md:hidden w-full max-w-md pointer-events-auto glass-panel rounded-2xl p-1.5 grid grid-cols-4 gap-1 shadow-2xl border-slate-600/40" aria-label="Мобильное управление картой">
+                <button id="btn-mobile-objects" class="dock-btn dock-accent-btn rounded-xl flex flex-col items-center justify-center gap-0.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                    <span class="text-[10px] font-bold">Объекты</span>
+                </button>
+
+                <button id="btn-mobile-tour" class="dock-btn rounded-xl flex flex-col items-center justify-center gap-0.5 text-slate-200 hover:bg-slate-800/60">
+                    <svg id="mobile-tour-icon-play" class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                    <svg id="mobile-tour-icon-stop" class="w-4 h-4 hidden text-rose-400" fill="currentColor" viewBox="0 0 24 24">
+                        <rect x="6" y="6" width="12" height="12" rx="2"/>
+                    </svg>
+                    <span id="mobile-tour-text" class="text-[10px] font-semibold">Тур</span>
+                </button>
+
+                <button id="btn-mobile-top" class="dock-btn rounded-xl flex flex-col items-center justify-center gap-0.5 text-slate-200 hover:bg-slate-800/60">
+                    <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                    </svg>
+                    <span class="text-[10px] font-semibold">Сверху</span>
+                </button>
+
+                <button id="btn-mobile-reset" class="dock-btn rounded-xl flex flex-col items-center justify-center gap-0.5 text-slate-200 hover:bg-slate-800/60">
+                    <svg class="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    <span class="text-[10px] font-semibold">Обзор</span>
+                </button>
+            </nav>
+        </footer>
+    </div>
+
+    <!-- Toast Notification Box -->
+    <div id="toast-box" class="fixed bottom-20 md:bottom-auto md:top-[76px] left-1/2 -translate-x-1/2 z-50 hidden pointer-events-none glass-panel px-4 py-2.5 rounded-xl border-emerald-400/50 text-xs font-semibold text-emerald-300 shadow-xl whitespace-nowrap max-w-[90vw] truncate">
+        Ссылка успешно обновлена
+    </div>
+
+    <!-- Модули 3D-карты (подключаются как классические скрипты для работы по file:// без сервера) -->
+    <script src="src/core/state.js"></script>
+    <script src="src/data/coastline.js"></script>
+    <script src="src/data/facilities.js"></script>
+    <script src="src/data/partner-logos-data.js"></script>
+    <script src="src/terrain/utils.js"></script>
+    <script src="src/terrain/ocean-and-island.js"></script>
+    <script src="src/sakhalin2/models.js"></script>
+    <script src="src/sakhalin2/environment.js"></script>
+    <script src="src/sakhalin2/pipelines.js"></script>
+    <script src="src/sakhalin2/scene.js"></script>
+    <script src="src/sakhalin1/far-east-terrain.js"></script>
+    <script src="src/sakhalin1/models-and-pipelines.js"></script>
+    <script src="src/sakhalin1/clouds-and-neighbors.js"></script>
+    <script src="src/sakhalin1/project-switch.js"></script>
+    <script src="src/ui/controls.js"></script>
+    <script src="src/engine/main-loop.js"></script>
+    <script src="src/intro/sakhgu-emblem-data.js"></script>
+    <script src="src/intro/globe.js"></script>
+    <script src="src/polish/device-and-effects.js"></script>
+    <script src="src/sakhalin1/alive-world.js"></script>
+    <script src="src/sakhalin1/alive-ice-and-infra.js"></script>
+    <script src="src/audio/sound.js"></script>
+    <script src="src/sakhalin2/runtime.js"></script>
+    <script src="src/i18n/i18n.js"></script>
+    <script src="src/engine/bootstrap.js"></script>
+    <canvas id="cin-overlay-canvas"></canvas>
+
+    <!-- Стартовый экран синематика (не попадает в запись видео) -->
+    <div id="cin-start-screen" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/65 backdrop-blur-sm">
+        <div class="glass-panel w-full max-w-md rounded-3xl p-6 border border-sky-400/35 shadow-2xl space-y-4">
+            <div class="space-y-1.5 text-center">
+                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-500/15 border border-sky-400/35 text-[11px] font-extrabold uppercase tracking-wider text-sky-300">
+                    <span class="w-2 h-2 rounded-full bg-sky-400 animate-pulse"></span>
+                    <span>3D-Синематик • 1:30</span>
+                </div>
+                <h1 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight">Пролёт по проектам Сахалина и ДВ</h1>
+                <p class="text-xs text-slate-400">
+                    «Сахалин-2» • «Сахалин-1» • «Сахалин-3» • МГП СХВ
+                </p>
+            </div>
+
+            <div class="space-y-2">
+                <div class="flex items-center justify-between gap-2 bg-slate-950/70 border border-slate-800 rounded-xl px-3.5 py-2">
+                    <span class="text-xs font-bold text-slate-300">Музыка:</span>
+                    <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                        <button id="cin-mus-builtin" type="button" class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold border border-emerald-400/50 bg-emerald-500/25 text-emerald-300 transition">Киномузыка</button>
+                        <label class="px-2.5 py-1 rounded-lg text-[11px] font-bold border border-slate-700 text-slate-300 hover:text-white cursor-pointer transition">
+                            <span id="cin-mp3-label">Свой MP3</span>
+                            <input id="cin-custom-mp3" type="file" accept="audio/*" class="hidden">
+                        </label>
+                        <button id="cin-mus-off" type="button" class="px-2 py-1 rounded-lg text-[11px] font-bold border border-slate-700 text-slate-300 hover:text-white transition">Выкл</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="flex items-center justify-between gap-1.5 bg-slate-950/70 border border-slate-800 rounded-xl px-3 py-2">
+                        <span class="text-[11px] font-bold text-slate-300">Язык:</span>
+                        <div class="flex items-center gap-1">
+                            <button id="cin-lang-ru" type="button" class="px-2 py-1 rounded-lg text-[11px] font-extrabold border border-emerald-400/50 bg-emerald-500/25 text-emerald-300 transition">RU</button>
+                            <button id="cin-lang-en" type="button" class="px-2 py-1 rounded-lg text-[11px] font-bold border border-slate-700 text-slate-300 hover:text-white transition">EN</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between gap-1.5 bg-slate-950/70 border border-slate-800 rounded-xl px-3 py-2">
+                        <span class="text-[11px] font-bold text-slate-300">Видео:</span>
+                        <div class="flex items-center gap-1">
+                            <button id="cin-qual-1080" type="button" class="px-2 py-1 rounded-lg text-[11px] font-extrabold border border-emerald-400/50 bg-emerald-500/25 text-emerald-300 transition">1080p</button>
+                            <button id="cin-qual-720" type="button" class="px-2 py-1 rounded-lg text-[11px] font-bold border border-slate-700 text-slate-300 hover:text-white transition">720p</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2.5 pt-1">
+                <button id="btn-cin-record" type="button" class="w-full py-3.5 px-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-sm shadow-xl shadow-emerald-500/25 transition flex items-center justify-center gap-2.5 active:scale-[0.99]">
+                    <span class="w-3 h-3 rounded-full bg-rose-600 ring-2 ring-white/80"></span>
+                    <span>Запустить и скачать видео</span>
+                </button>
+                <button id="btn-cin-watch" type="button" class="w-full py-2.5 px-4 rounded-xl bg-slate-800/85 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 transition">
+                    ▶ Смотреть без записи
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Мини-панель управления во время пролёта (НЕ попадает в запись видео!) -->
+    <div id="cin-live-bar" class="hidden fixed bottom-3 left-1/2 -translate-x-1/2 z-[100] glass-panel rounded-2xl px-4 py-2 border border-slate-600/60 shadow-2xl flex items-center gap-3 w-[92vw] max-w-xl">
+        <div id="cin-rec-indicator" class="flex items-center gap-1.5 text-[11px] font-extrabold text-rose-400 shrink-0">
+            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+            <span>REC</span>
+        </div>
+        <div id="cin-progress-track" class="flex-1 min-w-0 py-2 cursor-pointer select-none group" title="Перемотать (клик или перетаскивание)">
+            <div class="relative w-full h-1.5 group-hover:h-2 rounded-full bg-slate-800 transition-all">
+                <div id="cin-progress-fill" class="h-full rounded-full bg-gradient-to-r from-emerald-400 via-sky-400 to-amber-400" style="width: 0%;"></div>
+                <div id="cin-progress-thumb" class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-white shadow-md ring-2 ring-sky-400 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" style="left: 0%;"></div>
+            </div>
+        </div>
+        <span id="cin-time-label" class="text-[11px] font-mono font-bold text-slate-300 shrink-0">0:00 / 1:30</span>
+        <button id="btn-cin-pause" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-slate-200 shrink-0 transition">⏸ Пауза</button>
+        <button id="btn-cin-stop" type="button" class="px-3 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/35 border border-rose-400/50 text-[11px] font-extrabold text-rose-200 shrink-0 transition">
+            ⏹ <span id="cin-stop-label">Стоп и скачать видео</span>
+        </button>
+    </div>
+
+    <!-- Финальный экран с предпросмотром и скачиванием -->
+    <div id="cin-finish-screen" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+        <div class="glass-panel w-full max-w-2xl rounded-3xl p-6 border border-emerald-400/40 shadow-2xl space-y-4">
+            <div>
+                <div class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">Готово!</div>
+                <h2 class="text-lg sm:text-xl font-extrabold text-white">Синематик завершён</h2>
+                <p id="cin-finish-size" class="text-xs text-slate-300 mt-0.5"></p>
+            </div>
+            <video id="cin-preview-video" controls class="hidden w-full rounded-2xl border border-slate-700 bg-black max-h-[48dvh]"></video>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button id="btn-cin-download-again" type="button" class="py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-xs transition">
+                    ⬇ Скачать видео ещё раз
+                </button>
+                <button id="btn-cin-replay" type="button" class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 transition">
+                    ↻ Запустить заново
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="src/cinematic/director.js"></script>
+</body>
+</html>

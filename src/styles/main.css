@@ -1,0 +1,1065 @@
+:root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --proj-accent: #10b981;
+    --proj-accent-soft: rgba(16, 185, 129, 0.18);
+    --proj-accent-border: rgba(52, 211, 153, 0.48);
+    --proj-accent-glow: rgba(16, 185, 129, 0.24);
+    --proj-accent-text: #6ee7b7;
+}
+
+* {
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+    background-color: #031326;
+    color: #f8fafc;
+}
+
+#canvas-container {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    touch-action: none;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    outline: none;
+    touch-action: none;
+}
+
+/* Четкие 2D-маркеры поверх 3D-сцены */
+.marker-3d {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    pointer-events: auto;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.2s ease;
+    will-change: transform;
+}
+
+.marker-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 11px 5px 7px;
+    border-radius: 9999px;
+    background: rgba(7, 20, 38, 0.94);
+    border: 1.5px solid rgba(148, 163, 184, 0.5);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+    white-space: nowrap;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.marker-3d:hover .marker-badge,
+.marker-3d.active .marker-badge {
+    border-color: #fbbf24;
+    background: rgba(12, 30, 56, 0.98);
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.5);
+}
+
+.marker-3d.active {
+    z-index: 15;
+}
+
+.marker-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.marker-icon::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 9999px;
+    border: 1.5px solid currentColor;
+    opacity: 0.55;
+    animation: pulseRing 2.2s infinite ease-out;
+}
+
+@keyframes pulseRing {
+    0% { transform: scale(0.92); opacity: 0.75; }
+    100% { transform: scale(1.4); opacity: 0; }
+}
+
+/* Четкие подписи городов */
+.city-label-3d {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 5;
+    pointer-events: none;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.85);
+    white-space: nowrap;
+    will-change: transform;
+}
+
+.city-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    border: 1.5px solid #041527;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.9);
+    flex-shrink: 0;
+}
+
+.island-dot {
+    background-color: #7dd3fc;
+}
+
+/* Аккуратные интерактивные метки природных памятников Сахалина */
+.nature-label-3d {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 8;
+    pointer-events: auto;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px 3px 5px;
+    border-radius: 9999px;
+    background: rgba(6, 32, 42, 0.86);
+    border: 1px solid rgba(52, 211, 153, 0.55);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    color: #d1fae5;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    will-change: transform;
+}
+.nature-label-3d:hover {
+    border-color: #6ee7b7;
+    background: rgba(8, 47, 60, 0.96);
+    box-shadow: 0 0 14px rgba(52, 211, 153, 0.45);
+    color: #ffffff;
+}
+.nature-icon {
+    width: 14px;
+    height: 14px;
+    border-radius: 9999px;
+    background: rgba(16, 185, 129, 0.25);
+    color: #34d399;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    flex-shrink: 0;
+}
+
+/* Подписи навигационной сетки координат */
+.grid-label-3d {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 4;
+    pointer-events: none;
+    user-select: none;
+    color: rgba(125, 211, 252, 0.78);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.95);
+    white-space: nowrap;
+    will-change: transform;
+}
+
+/* Подписи регионов и транзитных направлений Дальнего Востока */
+.region-label-3d {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 5;
+    pointer-events: none;
+    user-select: none;
+    color: rgba(248, 250, 252, 0.88);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
+    white-space: nowrap;
+    will-change: transform;
+}
+
+/* Приглушённые подписи соседних стран (только текст, без 3D-суши) */
+.neighbor-country-label-3d {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 4;
+    pointer-events: none;
+    user-select: none;
+    color: rgba(148, 163, 184, 0.56);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
+    white-space: nowrap;
+    will-change: transform;
+}
+
+.transit-label-3d {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 6;
+    pointer-events: none;
+    user-select: none;
+    padding: 3px 9px;
+    border-radius: 9999px;
+    background: rgba(124, 45, 18, 0.88);
+    border: 1px solid rgba(251, 146, 60, 0.7);
+    color: #ffedd5;
+    font-size: 10px;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    will-change: transform;
+}
+
+/* Переключатель проектов Сахалин-2 / Сахалин-1 */
+.project-tab-btn {
+    transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.project-tab-btn.active-s2 {
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.42);
+}
+.project-tab-btn.active-s1 {
+    background: linear-gradient(135deg, #ea580c, #fb923c);
+    color: #020617;
+    box-shadow: 0 4px 14px rgba(249, 115, 22, 0.42);
+}
+.project-tab-btn.active-s3 {
+    background: linear-gradient(135deg, #2563eb, #38bdf8);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.45);
+}
+.project-tab-btn.active-shv {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
+}
+
+/* Ползунок мощности добычи */
+input[type="range"].telemetry-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, #0ea5e9 0%, #10b981 55%, #f59e0b 100%);
+    outline: none;
+}
+input[type="range"].telemetry-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: #f8fafc;
+    border: 2.5px solid #fbbf24;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.65);
+    cursor: pointer;
+}
+input[type="range"].telemetry-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: #f8fafc;
+    border: 2.5px solid #fbbf24;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.65);
+    cursor: pointer;
+}
+
+/* Компактные метки на мобильных экранах */
+@media (max-width: 767px) {
+    .marker-badge {
+        padding: 4px 8px 4px 5px;
+        gap: 5px;
+    }
+    .marker-icon {
+        width: 18px;
+        height: 18px;
+    }
+    .marker-badge .marker-text {
+        font-size: 10px;
+    }
+    .city-label-3d {
+        font-size: 10px;
+        gap: 4px;
+    }
+    .city-dot {
+        width: 5px;
+        height: 5px;
+    }
+}
+
+/* Стеклянные панели HUD */
+.glass-panel {
+    background: rgba(8, 22, 42, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(148, 163, 184, 0.26);
+    box-shadow: 0 16px 38px -8px rgba(0, 0, 0, 0.65);
+}
+
+/* Динамическое оформление панелей под цвет активного проекта (как шапка) */
+.project-themed-panel {
+    border-color: var(--proj-accent-border) !important;
+    box-shadow: 0 16px 38px -8px rgba(0, 0, 0, 0.68), 0 0 22px -6px var(--proj-accent-glow) !important;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.proj-badge-accent {
+    background-color: var(--proj-accent-soft) !important;
+    color: var(--proj-accent-text) !important;
+    border: 1px solid var(--proj-accent-border);
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+.dock-accent-btn {
+    background-color: var(--proj-accent-soft) !important;
+    border: 1px solid var(--proj-accent-border) !important;
+    color: var(--proj-accent-text) !important;
+}
+.filter-tab.filter-active {
+    background-color: var(--proj-accent) !important;
+    color: #020617 !important;
+    box-shadow: 0 2px 10px var(--proj-accent-glow);
+}
+
+/* Мобильные отступы безопасной зоны */
+.hud-safe-padding {
+    padding-top: calc(0.75rem + var(--safe-top));
+    padding-bottom: calc(0.75rem + var(--safe-bottom));
+    padding-left: calc(0.75rem + var(--safe-left));
+    padding-right: calc(0.75rem + var(--safe-right));
+}
+
+@media (min-width: 640px) {
+    .hud-safe-padding {
+        padding-top: calc(1.25rem + var(--safe-top));
+        padding-bottom: calc(1.25rem + var(--safe-bottom));
+        padding-left: calc(1.25rem + var(--safe-left));
+        padding-right: calc(1.25rem + var(--safe-right));
+    }
+}
+
+/* Оптимизация производительности на телефоне: отключаем тяжёлый blur поверх 3D WebGL */
+@media (max-width: 767px) {
+    .glass-panel {
+        background: rgba(8, 20, 38, 0.94);
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        box-shadow: 0 10px 26px -6px rgba(0, 0, 0, 0.65);
+    }
+
+    .mobile-sheet {
+        position: fixed !important;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100% !important;
+        max-width: 100% !important;
+        border-bottom-left-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+        border-top-left-radius: 1.5rem !important;
+        border-top-right-radius: 1.5rem !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-bottom: none !important;
+        padding-bottom: var(--safe-bottom);
+        box-shadow: 0 -14px 36px rgba(0, 0, 0, 0.78), 0 -2px 18px var(--proj-accent-glow);
+        transition: height 0.28s cubic-bezier(0.22, 1, 0.36, 1), max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .mobile-sheet.sheet-sidebar {
+        height: 72dvh;
+        max-height: 72dvh;
+        z-index: 45 !important;
+    }
+
+    .mobile-sheet.sheet-sidebar.sheet-fullscreen {
+        height: 94dvh !important;
+        max-height: 94dvh !important;
+        border-top-left-radius: 1.15rem !important;
+        border-top-right-radius: 1.15rem !important;
+    }
+
+    .mobile-sheet.sheet-detail {
+        max-height: 58dvh;
+        z-index: 42 !important;
+    }
+
+    .mobile-sheet.sheet-detail.sheet-fullscreen,
+    .mobile-sheet.sheet-detail.sheet-expanded {
+        height: 94dvh !important;
+        max-height: 94dvh !important;
+        border-top-left-radius: 1.15rem !important;
+        border-top-right-radius: 1.15rem !important;
+    }
+
+    .mobile-sheet.sheet-detail.sheet-collapsed {
+        height: auto !important;
+        max-height: 152px;
+    }
+
+    .mobile-sheet.sheet-detail.sheet-collapsed .detail-body-scroll {
+        display: none;
+    }
+}
+
+/* Индикатор-ручка для свайпа на мобильных шторках (в цвет проекта) */
+.sheet-drag-handle {
+    width: 44px;
+    height: 4px;
+    border-radius: 9999px;
+    background: var(--proj-accent-border);
+    box-shadow: 0 0 8px var(--proj-accent-glow);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Активное состояние кнопок мобильного дока */
+.dock-btn {
+    min-height: 46px;
+    min-width: 0;
+    transition: transform 0.14s ease, background-color 0.2s ease, color 0.2s ease;
+}
+.dock-btn:active {
+    transform: scale(0.93);
+}
+
+/* Интерактивный компас */
+#compass-needle {
+    transform-origin: 50% 50%;
+    will-change: transform;
+}
+
+/* Скроллбар */
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.4);
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.4);
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(251, 191, 36, 0.7);
+}
+
+/* ===================================================================== */
+/* СТАРТОВЫЙ ИНТЕРАКТИВНЫЙ 3D-ГЛОБУС И РЕЖИМЫ ПЛАТФОРМЫ (ТЕЛЕФОН / ПК)   */
+/* ===================================================================== */
+#globe-intro-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: radial-gradient(circle at 50% 42%, #0a203e 0%, #030d1d 58%, #01060f 100%);
+    transition: opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1), transform 0.85s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.85s ease;
+    transform: scale(1);
+    overflow: hidden;
+}
+#globe-intro-overlay.intro-hidden {
+    opacity: 0;
+    transform: scale(1.14);
+    visibility: hidden;
+    pointer-events: none;
+}
+#globe-intro-overlay .globe-ui-chrome {
+    transition: opacity 0.42s ease, transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#globe-intro-overlay.intro-diving .globe-ui-chrome {
+    opacity: 0 !important;
+    transform: scale(0.95);
+    pointer-events: none !important;
+}
+#globe-warp-veil {
+    position: absolute;
+    inset: 0;
+    z-index: 64;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(circle at 50% 48%, rgba(186, 230, 253, 0.72) 0%, rgba(14, 116, 144, 0.48) 38%, rgba(3, 19, 38, 0.92) 82%);
+    transition: opacity 0.25s ease;
+}
+#hud-layout {
+    transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+body.intro-active-hud-hidden #hud-layout {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Полноэкранная низкополигональная облачная предзагрузка и переходы */
+#cloud-transition-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 75;
+    pointer-events: none;
+    display: none;
+    overflow: hidden;
+}
+#cloud-transition-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+#cloud-transition-status {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(0.96);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    border-radius: 9999px;
+    background: rgba(7, 20, 38, 0.86);
+    border: 1px solid rgba(186, 230, 253, 0.42);
+    box-shadow: 0 14px 36px rgba(2, 10, 24, 0.55);
+    color: #f8fafc;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.24s ease, transform 0.24s ease;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+#cloud-transition-status.visible {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+.cloud-loader-spinner {
+    width: 14px;
+    height: 14px;
+    border-radius: 9999px;
+    border: 2px solid rgba(251, 191, 36, 0.3);
+    border-top-color: #fbbf24;
+    animation: cloudSpin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+@keyframes cloudSpin {
+    to { transform: rotate(360deg); }
+}
+
+#globe-canvas-wrap {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    cursor: grab;
+}
+#globe-canvas-wrap:active {
+    cursor: grabbing;
+}
+#globe-sakhalin-pin {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 65;
+    pointer-events: auto;
+    cursor: pointer;
+    user-select: none;
+    will-change: transform, opacity;
+    transition: opacity 0.22s ease;
+}
+.globe-pin-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 13px 6px 8px;
+    border-radius: 9999px;
+    background: rgba(7, 20, 38, 0.92);
+    border: 1.5px solid rgba(251, 191, 36, 0.85);
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.45), 0 8px 22px rgba(0, 0, 0, 0.65);
+    color: #ffffff;
+    white-space: nowrap;
+    transition: transform 0.18s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+.globe-pin-btn:hover {
+    transform: scale(1.06);
+    background: rgba(15, 34, 62, 0.98);
+    box-shadow: 0 0 32px rgba(251, 191, 36, 0.72), 0 10px 26px rgba(0, 0, 0, 0.75);
+}
+.globe-pin-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 9999px;
+    background: #fbbf24;
+    box-shadow: 0 0 12px #fbbf24;
+    position: relative;
+    flex-shrink: 0;
+}
+.globe-pin-dot::after {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 9999px;
+    border: 2px solid #fbbf24;
+    animation: pulseRing 1.8s infinite ease-out;
+}
+.globe-mode-btn.active-mode {
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    color: #020617;
+    box-shadow: 0 4px 14px rgba(251, 191, 36, 0.35);
+}
+.globe-proj-btn.active-s2 {
+    background: rgba(251, 191, 36, 0.22);
+    border-color: rgba(251, 191, 36, 0.85);
+    color: #fef3c7;
+}
+.globe-proj-btn.active-s1 {
+    background: rgba(249, 115, 22, 0.24);
+    border-color: rgba(251, 146, 60, 0.85);
+    color: #ffedd5;
+}
+.globe-proj-btn.active-s3 {
+    background: rgba(6, 182, 212, 0.24);
+    border-color: rgba(56, 189, 248, 0.85);
+    color: #e0f2fe;
+}
+.globe-proj-btn.active-shv {
+    background: rgba(225, 29, 72, 0.24);
+    border-color: rgba(244, 63, 94, 0.85);
+    color: #ffe4e6;
+}
+
+/* Принудительный режим «Телефон» (даже на широком экране ПК) */
+body.force-mobile #mobile-dock {
+    display: grid !important;
+}
+body.force-mobile #hud-layout header .hidden.md\:flex,
+body.force-mobile #hud-layout footer .hidden.md\:flex {
+    display: none !important;
+}
+body.force-mobile #hud-layout header .flex.md\:hidden {
+    display: flex !important;
+}
+body.force-mobile .glass-panel {
+    background: rgba(8, 20, 38, 0.94);
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+body.force-mobile .mobile-sheet {
+    position: fixed !important;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-top-left-radius: 1.5rem !important;
+    border-top-right-radius: 1.5rem !important;
+    box-shadow: 0 -14px 36px rgba(0, 0, 0, 0.78), 0 -2px 18px var(--proj-accent-glow);
+    transition: height 0.28s cubic-bezier(0.22, 1, 0.36, 1), max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+body.force-mobile .mobile-sheet.sheet-sidebar {
+    height: 72dvh;
+    max-height: 72dvh;
+    z-index: 45 !important;
+}
+body.force-mobile .mobile-sheet.sheet-sidebar.sheet-fullscreen {
+    height: 94dvh !important;
+    max-height: 94dvh !important;
+    border-top-left-radius: 1.15rem !important;
+    border-top-right-radius: 1.15rem !important;
+}
+body.force-mobile .mobile-sheet.sheet-detail {
+    max-height: 58dvh;
+    z-index: 42 !important;
+}
+body.force-mobile .mobile-sheet.sheet-detail.sheet-fullscreen,
+body.force-mobile .mobile-sheet.sheet-detail.sheet-expanded {
+    height: 94dvh !important;
+    max-height: 94dvh !important;
+    border-top-left-radius: 1.15rem !important;
+    border-top-right-radius: 1.15rem !important;
+}
+body.force-mobile .mobile-sheet.sheet-detail.sheet-collapsed {
+    height: auto !important;
+    max-height: 152px;
+}
+body.force-mobile .mobile-sheet.sheet-detail.sheet-collapsed .detail-body-scroll {
+    display: none;
+}
+body.force-mobile #sidebar-panel:not(.mobile-open-forced) {
+    display: none !important;
+}
+body.force-mobile #sidebar-panel.mobile-open-forced {
+    display: flex !important;
+}
+body.force-mobile #sidebar-drag-area,
+body.force-mobile #detail-drag-area,
+body.force-mobile #btn-close-sidebar {
+    display: flex !important;
+}
+body.force-mobile #hud-layout > div > div.pointer-events-none.absolute {
+    left: 0 !important;
+}
+
+/* Принудительный режим «ПК» (компактная десктопная раскладка даже на телефоне/планшете) */
+body.force-desktop #mobile-dock,
+body.force-desktop #hud-layout header .flex.md\:hidden,
+body.force-desktop #mobile-backdrop,
+body.force-desktop #sidebar-drag-area,
+body.force-desktop #detail-drag-area,
+body.force-desktop #btn-close-sidebar {
+    display: none !important;
+}
+body.force-desktop #hud-layout header .hidden.md\:flex,
+body.force-desktop #hud-layout footer .hidden.md\:flex {
+    display: flex !important;
+}
+body.force-desktop #btn-brand-title-card {
+    width: 320px !important;
+    max-width: 320px !important;
+    height: 52px !important;
+}
+body.force-desktop #sidebar-panel {
+    display: flex !important;
+    position: relative !important;
+    width: 320px !important;
+    max-width: 320px !important;
+    max-height: 100% !important;
+    border-radius: 1rem !important;
+}
+body.force-desktop #detail-card {
+    position: relative !important;
+    width: 336px !important;
+    max-width: 336px !important;
+    max-height: 100% !important;
+    border-radius: 1rem !important;
+}
+body.force-desktop #detail-card.sheet-collapsed {
+    max-height: 100% !important;
+}
+body.force-desktop #detail-card.sheet-collapsed .detail-body-scroll {
+    display: block !important;
+}
+body.force-desktop #hud-layout > div > div.pointer-events-none.absolute {
+    left: 332px !important;
+}
+@media (max-width: 900px) {
+    body.force-desktop #btn-brand-title-card,
+    body.force-desktop #sidebar-panel {
+        width: 268px !important;
+        max-width: 268px !important;
+    }
+    body.force-desktop #hud-layout > div > div.pointer-events-none.absolute {
+        left: 280px !important;
+    }
+}
+
+
+/* ===================================================================== */
+/* ФИНАЛЬНАЯ ШЛИФОВКА (GOLD MASTER v19): UX, КИНО-РЕЖИМ И МАСШТАБ        */
+/* ===================================================================== */
+html, body {
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+}
+#canvas-container, #globe-canvas-wrap {
+    overscroll-behavior: none;
+    touch-action: none;
+}
+.detail-body-scroll, #facility-list {
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+}
+
+/* Кино-режим (Чистый экран) */
+body.cinema-mode #hud-layout,
+body.cinema-mode #markers-layer,
+body.cinema-mode #map-scale-bar,
+body.cinema-mode #controls-hint-toast {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+/* Пункты инфраструктуры: при входе в облака/возврате на планету пропадают МГНОВЕННО,
+   а после рассеивания облаков плавно проявляются с небольшой задержкой */
+#markers-layer {
+    transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.75s;
+}
+body.intro-active-hud-hidden #markers-layer {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.08s linear 0s;
+}
+body.cinema-mode #markers-layer {
+    transition-delay: 0s;
+}
+#cinema-exit-btn {
+    position: fixed;
+    top: max(14px, env(safe-area-inset-top));
+    right: max(14px, env(safe-area-inset-right));
+    z-index: 58;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 9999px;
+    background: rgba(7, 20, 38, 0.62);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    color: rgba(241, 245, 249, 0.92);
+    font-size: 12px;
+    font-weight: 700;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    cursor: pointer;
+    transition: opacity 0.25s ease, background-color 0.2s ease, transform 0.18s ease;
+}
+#cinema-exit-btn:hover {
+    background: rgba(15, 34, 62, 0.92);
+    border-color: rgba(251, 191, 36, 0.65);
+    color: #ffffff;
+}
+body.cinema-mode #cinema-exit-btn {
+    display: flex;
+}
+body.intro-active-hud-hidden #map-scale-bar,
+body.intro-active-hud-hidden #controls-hint-toast,
+body.intro-active-hud-hidden #cinema-exit-btn {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* Динамическая географическая шкала масштаба (в километрах) */
+#map-scale-bar {
+    position: fixed;
+    right: max(14px, env(safe-area-inset-right));
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    z-index: 26;
+    pointer-events: none;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+    padding: 5px 9px 6px;
+    border-radius: 10px;
+    background: rgba(6, 18, 34, 0.68);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: opacity 0.45s ease, bottom 0.25s ease;
+}
+@media (min-width: 768px) {
+    body:not(.force-mobile) #map-scale-bar {
+        bottom: 58px;
+        right: 18px;
+    }
+}
+body.force-desktop #map-scale-bar {
+    bottom: 58px !important;
+    right: 18px !important;
+}
+body.force-mobile #map-scale-bar {
+    bottom: calc(82px + env(safe-area-inset-bottom)) !important;
+    right: max(14px, env(safe-area-inset-right)) !important;
+}
+#map-scale-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #e2e8f0;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+#map-scale-line {
+    height: 5px;
+    width: 80px;
+    border-left: 2px solid #38bdf8;
+    border-right: 2px solid #38bdf8;
+    border-bottom: 2px solid #e2e8f0;
+    border-radius: 0 0 2px 2px;
+    transition: width 0.16s ease-out;
+}
+
+/* Умная подсказка управления при первом влёте */
+#controls-hint-toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(92px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(14px);
+    z-index: 48;
+    pointer-events: none;
+    opacity: 0;
+    max-width: calc(100vw - 28px);
+    padding: 9px 15px;
+    border-radius: 9999px;
+    background: rgba(7, 20, 38, 0.90);
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    box-shadow: 0 12px 32px rgba(2, 10, 24, 0.65);
+    color: #e2e8f0;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (min-width: 768px) {
+    body:not(.force-mobile) #controls-hint-toast {
+        bottom: 62px;
+    }
+}
+body.force-desktop #controls-hint-toast {
+    bottom: 62px !important;
+}
+#controls-hint-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+
+/* Компактные метки 3D-достопримечательностей Дальнего Востока (появляются при приближении) */
+.fe-landmark-label-3d {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 9;
+    pointer-events: none;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    background: rgba(8, 22, 42, 0.84);
+    border: 1px solid rgba(251, 191, 36, 0.55);
+    color: #fef3c7;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+    will-change: transform;
+}
+.fe-landmark-label-3d::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: #fbbf24;
+    box-shadow: 0 0 8px #fbbf24;
+    flex-shrink: 0;
+}
+
+
+/* ===================================================================== */
+/* ВИЗУАЛЬНЫЕ ФИЛЬТРЫ 3D-СЦЕНЫ (v21): ПОСТОЯННЫЙ СТИЛЬ «НАТУРАЛЬНЫЙ»     */
+/* ===================================================================== */
+#canvas-container canvas {
+    filter: contrast(1.11) saturate(1.16) brightness(1.04) sepia(0.06);
+}
+#scene-fx-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 1;
+    background: radial-gradient(circle at 50% 45%, rgba(255, 248, 232, 0.04) 0%, rgba(2, 12, 26, 0.24) 100%);
+}
+
+
+/* ===================================================================== */
+/* ПОЛИРОВКА «САХАЛИН-2» (v26): КАРТОЧКА СКАЛ «ТРИ БРАТА»                */
+/* ===================================================================== */
+.nature-marker-3d.clickable-landmark {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    border-color: rgba(56, 189, 248, 0.72) !important;
+    transition: transform 0.16s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.nature-marker-3d.clickable-landmark:hover {
+    border-color: rgba(251, 191, 36, 0.92) !important;
+    box-shadow: 0 0 18px rgba(251, 191, 36, 0.35), 0 6px 18px rgba(0, 0, 0, 0.65);
+}
+#three-brothers-card {
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right));
+    top: 50%;
+    transform: translateY(-50%) scale(0.95);
+    z-index: 49;
+    width: 300px;
+    max-width: calc(100vw - 32px);
+    border-radius: 20px;
+    background: rgba(7, 19, 36, 0.94);
+    border: 1px solid rgba(56, 189, 248, 0.42);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    padding: 16px;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.24s ease, transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.24s ease;
+}
+#three-brothers-card.open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(-50%) scale(1);
+}
+body.cinema-mode #three-brothers-card,
+body.intro-active-hud-hidden #three-brothers-card {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
